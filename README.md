@@ -1,262 +1,262 @@
-# Генератор демобазы
+# Demo Database Generator
 
-🌐 [English](README.md) | Русский
+🌐 English | [Русский](README-ru.md)
 
-## Назначение
+## Purpose
 
-Программа-генератор позволяет создать базу данных с той же структурой, что и [демобаза](https://postgrespro.ru/education/demodb), но иным наполнением. Благодаря ряду настроек можно изменить характеристики данных, например поменять маршрутную сеть и флот авиакомпании.
+The demo database generator program allows you to create a database with the [demo database](https://postgrespro.com/education/demodb) structure and adapt its content to your needs. Thanks to some parameters, you can change the data characteristics, for example, route network or airline fleet.
 
-Программу также можно использовать как генератор нагрузки, например, чтобы продемонстрировать системы мониторинга или потренироваться в оптимизации запросов.
+The program can also be used as a load generator. For example, to demonstrate monitoring systems or to practice query optimization.
 
-## Установка
+## Installation
 
-1. Создайте локальную копию репозитория `demodb`.
-2. В `psql` подключитесь к любой базе данных, кроме `demo`.
-    >  **Внимание**
+1. Clone the `demodb` repository.
+2. In `psql`, connect to any database, except for `demo`.
+    >  **Warning**
     >
-    >  Если база `demo` уже существует, то в ходе установки она будет удалена и все данные в ней будут потеряны.
-3. Убедитесь, что находитесь в каталоге репозитория `demodb`:
+    >  If the `demo` database already exists, it will be deleted and all of its data will be lost during the installation.
+3. Make sure that you are in the `demodb` repository directory:
 
    ```sql
    \! pwd
    ```
-   При необходимости смените текущий каталог командой `\cd`.
+   If necessary, change the directory, using `\cd`.
 
-4. Выполните установку:
+4. Start installation:
 
    ```sql
    \i install.sql
    ```
 
-В ходе установки будет создана база данных `demo` и две схемы в ней:
-   * `gen` — для объектов генератора;
-   * `bookings` — для объектов создаваемой демобазы.
+The commands create the `demo` database and two schemas in it:
+   * `gen` — for the generator objects
+   * `bookings` — for the created demo database objects
 
-Для работы с генератором необходимы следующие расширения:
-   * `btree_gist` — для реализации темпорального ключа;
-   * `earthdistance` и `cube` — для расчёта расстояний на сфере;
-   * `dblink` — для запуска параллельных процессов. 
+To work with the generator, you need the following extensions:
+   * `btree_gist` — to implement a temporary key
+   * `earthdistance` and `cube` — to calculate the great circle distance
+   * `dblink` — to launch parallel processes
    
-Как правило, расширения входят в стандартный пакет установки PostgreSQL.
+As a rule, these extensions are included in the standard PostgreSQL installation package.
 
-## Быстрый старт
+## Quick Start
 
-### Запуск генерации
+### Launch Generation
 
-Генерация демобазы всегда выполняется в параллельных процессах (даже если такой процесс один).
+The demo database generation is always performed by parallel processes (even if there is only one process).
 
-Чтобы запустить генерацию, выполните процедуру `generate`, указав начальное и конечное модельное время.
+To launch generation, run the `generate` procedure, specifying the start and end simulation time.
 
-Например, чтобы сгенерировать демобазу за один год, выполните команду:
+For example, to generate a database for a one-year period, run the following command:
 
 ```sql
 CALL generate( now(), now() + interval '1 year' );
 ```
 
-Чтобы ускорить работу, можно запустить генерацию в нескольких параллельных процессах:
+To speed up generation, you can run several parallel processes:
 
 ```sql
 CALL generate( now(), now() + interval '1 year', 4 );
 ```
 
-### Проверка состояния генерации
+### Check generation status
 
-Чтобы быстро проверить состояние генерации, выполните команду:
+To quickly check the generation status, run the following command:
 
 ```sql
 SELECT busy();
 ```
 
-Возможные значения:
+Possible values:
 
-  * `t` (true) — генерация в процессе;
-  * `f` (false) — генерация завершена.
+  * `t` (true) — generation is in process
+  * `f` (false) — generation is completed
 
-Более полное представление о процессе можно получить из журнала сообщений генератора `gen.log`:
+To get more details, see the `gen.log` generator log:
 
 ```sql
 SELECT * FROM gen.log ORDER BY at DESC LIMIT 30 \watch 60
 ```
 
-### Досрочное завершение генерации
+### Abort generation
 
-Чтобы прервать генерацию, выполните команду:
+To abort generation, run the following command:
 
 ```sql
 CALL abort();
 ```
 
-> **Примечание**
+> **Note**
 >
-> Разрыв соединения не завершает работу генератора. 
+> A broken connection does not cancel generation.
 
-### Завершение генерации
+### Complete generation
 
-1. Чтобы узнать о завершении генерации, проверьте статус процессов:
+1. To make sure that generation is complete, check its status:
 
    ```sql
    SELECT busy();
    ```
 
-   Если генерация завершена успешно, в выводе будет `f` (false).
+   If generation is completed successfully, the output will be `f` (false).
 
-2. Проверьте созданную демобазу данных:
+2. Check the created demo database:
 
    ```sql
    \i check.sql
    ```
 
-### Выгрузка демобазы
+### Export database
 
-Полученную демобазу можно выгрузить в виде SQL-скрипта. 
+You can export the demo database as an SQL script.
 
-Чтобы создать SQL-скрипт, в каталоге репозитория от имени пользователя операционной системы выполните команду:
+To create an SQL script, in the repository directory, run the following command as an OS user:
 
 ```sh
 ./export.sh > `date +%Y%m%d`.sql
 ```
 
-### Продолжение генерации
+### Continue generation
 
-Генерацию можно продолжить с того момента, на котором она остановилась. 
+You can continue generation from where it stopped.
 
-Например, чтобы сгенерировать данные ещё за три месяца, выполните команду:
+For example, to generate data for another three months, run the following command:
 
 ```sql
 CALL continue( now() + interval '1 year 3 month', 4 );
 ```
 
-## Настройка
+## Setup
 
-Чтобы настроить генерацию, измените необходимые конфигурационные параметры на уровне базы данных:
+To customize data generation, change the required configuration parameters at the database level:
 
 ```sql
-ALTER DATABASE demo SET имя-параметра = значение;
+ALTER DATABASE demo SET parameter-name = value;
 ```
 
-> **Примечание**
+> **Note**
 >
-> Установка на уровне сеанса (`SET`) не сработает, так как доступ к значениям параметров должны иметь параллельные процессы.
+> You cannot change configuration parameters at the session level (`SET`) since parallel processes require access to their values.
 
-Некоторые внутренние настройки не вынесены на уровень пользователя: они присутствуют в исходном коде в виде постоянных функций или только в виде констант (неудачные значения могут привести к ошибкам генерации или к неожиданным результатам).
+Some internal settings are not available at the user level: they are implemented as immutable functions or constants in the source code (incorrect values can lead to generation errors or unexpected results).
 
-Доступные для изменения конфигурационные параметры описаны ниже.
+The available configuration parameters are described below.
 
 ### `gen.connstr`
 
-Строка подключения к базе данных `demo`.
+Connection string to the `demo` database.
 
-Значение по умолчанию: `dbname=demo` (подключение к локальному серверу). При необходимости укажите любые параметры, поддерживаемые libpq.
+Default value: `dbname=demo` (connection to a local server). If necessary, you can specify any value for this parameter supported by libpq.
 
 ### `gen.airlines_name`
 
-Название авиакомпании. Появляется только в значении, возвращаемом функцией `bookings.version`.
+Airline name. Returned only as part of the `bookings.version` function output.
 
-Значение по умолчанию: `PostgresPro`.
+Default value: `PostgresPro`.
 
 ### `gen.airlines_code`
 
-Код авиакомпании. Используется как префикс номеров билетов (`bookings.tickets.ticket_no`).
+Airline code. Used as a prefix to a ticket number (`bookings.tickets.ticket_no`).
 
-Значение по умолчанию: `PG`.
+Default value: `PG`.
 
 ### `gen.traffic_coeff`
 
-Коэффициент для пересчёта относительного пассажиропотока (`gen.airports_data.traffic`) в количество бронирований из данного аэропорта в неделю.
+Factor for converting relative passenger traffic (`gen.airports_data.traffic`) into a number of bookings made from an airport within a week.
 
 ### `gen.domestic_frac`
 
-Доля рейсов, которая должна приходиться на внутренние перелёты в пределах одной страны. Целевое значение. Используется при формировании графа перелётов. 
+Fraction of flights with flight segments within one country. This is a target value. Used to build a flight graph.
 
-Значение по умолчанию: `0.9`.
+Default value: `0.9`.
 
 ### `gen.roundtrip_frac`
 
-Доля бронирований, при которых билеты покупаются «туда и обратно». Целевое значение. Всегда больше реального значения, так как обратные билеты могут быть недоступны.
+Fraction of round trip bookings. This is a target value. The real number is less than the target since return tickets are not always available.
 
-Значение по умолчанию: `0.9`.
+Default value: `0.9`.
 
 ### `gen.delay_frac`
 
-Доля задержанных рейсов.
+Fraction of delayed flights.
 
-Значение по умолчанию: `0.05`.
+Default value: `0.05`.
 
 ### `gen.cancel_frac`
 
-Доля отменённых рейсов.
+Fraction of cancelled flights.
 
-Значение по умолчанию: `0.005`.
+Default value: `0.005`.
 
 ### `gen.exchange`
 
-Коэффициент пересчёта минут полёта в стоимость билета в предпочитаемой валюте. В зависимости от класса обслуживания применяется дополнительный встроенный повышающий коэффициент (функция `get_price`).
+Factor for converting the flight duration (in minutes) into the ticket price in the chosen currency. Depending on the travel class, an additional multiplying factor is applied (`get_price` function).
 
-Значение по умолчанию: `50`.
+Default value: `50`.
 
 ### `gen.max_pass_per_booking`
 
-Максимальное количество пассажиров в одном бронировании.
+Maximum number of passengers per booking.
 
-Значение по умолчанию: `5`.
+Default value: `5`.
 
 ### `gen.min_transfer`
 
-Минимальное время в часах между пересадками.
+Minimum time in hours between connecting flights.
 
-Значение по умолчанию: `2`. 
+Default value: `2`.
 
-> **Примечание**
+> **Note**
 >
-> Чем меньше значение, тем больше рейсов доступно для формирования маршрута, но выше риск опоздать на стыковочный рейс при задержке предыдущего.
+> The lower the limit is, the more flights become available for route planning. At the same time, the risk of getting late for a connecting flight is growing.
 
 ### `gen.max_transfer`
 
-Максимальное время в часах между пересадками.
+Maximum time in hours between connecting flights.
 
-Значение по умолчанию: `48`.
+Default value: `48`.
 
-> **Примечание**
+> **Note**
 >
-> Чем больше значение, тем больше рейсов доступно для формирования маршрута, но максимальное время ожидания следующего рейса тоже увеличивается.
+> The higher the limit is, the higher the chances are that the passenger will get to their destination by our airline.
 
 ### `gen.max_hops`
 
-Максимальное количество пересадок в одном билете.
+Maximum number of flight connections in one ticket.
 
-Значение по умолчанию: `4`.
+Default value: `4`.
 
-> **Примечание**
+> **Note**
 >
-> Чем больше значение, тем больше вероятность, что пассажир сумеет воспользоваться авиакомпанией, чтобы добраться до желаемого пункта.
+> The higher the limit is, the higher the chances are that the flight is chosen for a certain route.
 
 ### `gen.log_severity`
 
-Приоритет сообщений, попадающих в журнал `gen.log`. Наиболее важные сообщения имеют приоритет `0`.
+Priority of messages to be logged in the `gen.log` log table. The highest priority is `0`.
 
-Значение по умолчанию: `0` (записываются только важные сообщения). Большее значение рекомендуется устанавливать только в целях отладки.
+Default value: `0` (only important messages are logged). It it recommended to change the default value only for debugging purposes.
 
 ### `bookings.lang`
 
-Язык, на котором будут выводиться названия моделей самолётов, стран, городов и аэропортов. Задаётся при развёртывании демобазы. Доступны русский (`ru`) и английский (`en`) языки.
+Language in which names of aircraft models, countries, cities, and airports are displayed. The parameter is set during the database deployment. The Russian (`ru`) and English (`en`) languages are available.
 
-Значение по умолчанию: `en`.
+Default value: `en`.
 
-## Программный интерфейс
+## Software Interface
 
-Ряд процедур и функций, с помощью которых пользователь взаимодействует с генератором.
+Procedures and functions that allow users to work with the generator.
 
 ### `generate`
 
-Запустить генерацию демобазы. 
+Launch demo database generation.
 
-Параметры:
+Parameters:
 
-  * `start_date` (`timestamptz`) — модельное время начала генерации;
-  * `end_date` (`timestamptz`) — модельное время окончания генерации;
-  * `jobs` (`integer`) — количество параллельных процессов (значение по умолчанию: `1`).
+  * `start_date` (`timestamptz`) — simulation start time for generation
+  * `end_date` (`timestamptz`) — simulation end time for generation
+  * `jobs` (`integer`) — number of parallel processes (default value: `1`)
 
-Пример вызова:
+Example:
 
 ```sql
 CALL generate(
@@ -268,16 +268,16 @@ CALL generate(
 
 ### `continue`
 
-Продолжить генерацию демобазы после останова прошлого вызова `generate` или `continue`. 
+Continue demo database generation from where it stopped after the previous `generate` or `continue` call.
 
-Параметры:
+Parameters:
 
-  * `end_date` (`timestamptz`) — модельное время окончания генерации;
-  * `jobs` (`integer`) — количество параллельных процессов (значение по умолчанию: `1`).
+  * `end_date` (`timestamptz`) — simulation end time for generation
+  * `jobs` (`integer`) — number of parallel processes (default value: `1`)
 
-Модельное время начала генерации задаётся автоматически. Это время предыдущего останова генерации.
+The simulation start time is set automatically. It corresponds to the end of the previous generation process.
 
-Пример вызова:
+Example:
 
 ```sql
 CALL continue(
@@ -288,14 +288,14 @@ CALL continue(
 
 ### `busy`
 
-Показать текущее состояние генерации. 
+Show the current generation status.
 
-Возможные значения:
+Possible values:
 
-  * `t` (true) — генерация в процессе; 
-  * `f` (false) — генерация завершена.
+  * `t` (true) — generation is in progress
+  * `f` (false) — generation is completed
 
-Пример вызова:
+Example:
 
 ```sql
 SELECT busy();
@@ -303,530 +303,533 @@ SELECT busy();
 
 ### `abort`
 
-Досрочно прервать генерацию.
+Cancel generation before it is completed.
 
-Пример вызова:
+Example:
 
 ```sql
 CALL abort();
 ```
 
-После прерывания генерации её можно начать заново с помощью `generate`. Использовать `continue` не рекомендуется, так как корректное продолжение не гарантируется.
+After generation is aborted, you can launch a new generation process using `generate`. It is not recommended to resume generation using `continue` since it does not guarantee correct generation.
 
 ### `get_passenger_name`
 
-Выдать случайное имя пассажира из указанной страны.
+Return a random passenger`s name from a chosen country.
 
-Параметр:
+Parameter:
 
-  * `country` (`text`) — код страны.
+  * `country` (`text`) — country code
 
-Возможные значения по умолчанию: `RU` (Россия), `CN` (Китай), `IN` (Индия), `US` (США), `CA` (Канада), `JP` (Япония), `FR` (Франция), `DE` (Германия), `IT` (Италия), `GB` (Великобритания), `CL` (Чили), `SE` (Швеция), `NP` (Непал), `FI` (Финляндия), `NZ` (Новая Зеландия), `AT` (Австрия) и `CZ` (Чехия).
+Possible default values: `RU` (Russia), `CN` (China), `IN` (India), `US` (the USA), `CA` (Canada), `JP` (Japan), `FR` (France), `DE` (Germany), `IT` (Italy), `GB` (the UK), `CL` (Chile), `SE` (Sweden), `NP` (Nepal), `FI` (Finland), `NZ` (New Zealand), `AT` (Austria), and `CZ` (the Czech Republic).
 
-Пример вызова, в результате которого выводятся десять случайных непальских имён:
+Example that returns ten random Nepalese names:
 
 ```sql
-CALL calc_names_cume_dist(); -- необходимо выполнить один раз
+CALL calc_names_cume_dist(); -- execute once
 SELECT get_passenger_name('NP') FROM generate_series(1,10);
 ```
 
-> **Примечание**
+> **Note**
 >
-> * Чтобы добавить страну, добавьте имена в справочники генератора — `firstnames.dat` и `lastnames.dat` (за подробностями обратитесь к разделу [«Вопросы и ответы»](#как-добавить-новую-страну)).
-> * Функция не требуется для работы с демобазой, но может быть полезной для наполнения других баз данных, в которых требуются случайные имена с правдоподобным распределением.
+> * To add a new country, add new names to the `firstnames.dat` and `lastnames.dat` reference files (for more information, refer to the [«Questions and Answers»](#how-can-I-add-a-new-country) section).
+> * The function is not necessary to work with the demo database but can be useful for other databases that require random reasonably distributed names.
 
+## Log Table
 
-## Журнальная таблица
-
-Генератор записывает сообщения в журнальную таблицу `gen.log`, которую можно посмотреть после генерации или использовать для мониторинга в процессе генерации:
+The generator logs messages in the `gen.log` table that you can check after generation or use to monitor the generation process:
 
 ```sql
 SELECT * FROM gen.log ORDER BY at DESC LIMIT 30 \watch 60
 ```
 
-В журнальную таблицу попадают все сообщения с приоритетом не ниже значения параметра `gen.severity`. По умолчанию записываются только важные сообщения с приоритетом `0`. Для отладки набор сообщений можно расширить, указав ненулевой приоритет.
+The log table stores all the messages with the priority equal to or higher than the `gen.severity` parameter value. By default, only important messages with the `0` priority are logged. For debugging, you can set a non-zero value for the parameter.
 
-Ниже перечислены основные сообщения и их значения:
+Key messages and their meaning are listed below:
 
-* Job _N_ (connname=_соединение_): _результат_
+* Job _N_ (connname=_connection_): _result_
 
-   Рабочий процесс _N_ запущен, используя _соединение_.
+   Work process _N_ is launched using _connection_.
 
-* _день_: one day in _время_
+* _day_: one day in _time_
 
-   Расчёт модельного дня _день_ занял _время_ реального времени. Выводится раз в модельный день.
+   _time_ real time was required to calculate _day_ simulation day. Displayed once in a simulation day.
 
 * New bookings: _B_ (forceoneway _F_), nopath _P_, noseat _S_
 
-   За модельный день было создано _B_ бронирований. Из них _F_ планировались как бронирования «туда и обратно» (с учётом целевого значения `gen.roundtrip_frac`), но из-за отсутствия нужных билетов бронь была сделана только в одну сторону. _P_ раз создать бронирование не удалось из-за отсутствия подходящих рейсов, _S_ раз создать бронирование не удалось из-за того, что на одном из выбранных рейсов не оказалось свободных мест.
+   During the simulation day, _B_ bookings were created. _F_ of them were planned as round-trip (considering the `gen.roundtrip_frac` target parameter) but remained one-way since a return ticket was not available. _P_ booking attempts failed since there were no suitable flights, and _S_ attempts failed since there were no free seats for one of the chosen flights.
    
 * Book-ref retries = _R_ (_F_ retries/booking)
 
-   За модельный день потребовалось _R_ раз повторно выбирать случайный номер бронирования из-за того, что номер, выбранный изначально, уже был занят. Значение _F_ показывает количество повторных попыток в пересчёте на одно бронирование.
+   During the simulation day, it took _R_ retries to generate a random booking reference due to unavailability of initially chosen values. The _F_ value is a number of retries per booking.
 
-   >  **Примечание**
+   >  **Note**
    >
-   >  Чем дольше работает генератор, тем больше номеров будет занято и тем больше времени будет уходить на поиск свободного значения. Общее количество номеров бронирования — около 2 млрд значений. За один модельный год при настройках по умолчанию генерируется около 5 млн бронирований, поэтому на горизонте нескольких модельных лет замедление работы генератора при выборе номера бронирования не ожидается.
+   >  The longer the generator works, the less numbers are available and the more time is needed to find a free one. In total, there are about 2 billion booking numbers. With its default configuration, the generator uses about 5 million numbers in one simulation year. For this reason, no slow-downs should be expected in several simulation years.
 
 * New boarding passes: _BP_
 
-   За модельный день было создано _BP_ посадочных талонов.
+   During the simulation day, _BP_ boarding passes were created.
 
-* Building routes, range _период_
+* Building routes, range _period_
 
-   Выполняется перестроение маршрутов с периодом действия _период_. После этого сообщения идёт перечисление новых маршрутов.
+   Routes with a _period_ validity period were built. The list of new routes follows.
 
-* _А1_ -> _A2_: _модель_ x _N_, traffic = _P_ pass/week
+* _А1_ -> _A2_: _model_ x _N_, traffic = _P_ pass/week
 
-   Маршрут из аэропорта _А1_ в аэропорт _А2_ построен. Он выполняется самолётом _модели_ _N_ раз в неделю. Предполагаемый пассажиропоток составляет _P_ пассажиров в неделю.
+   The route from the _А1_ airport to the _А2_ airport is built. The route is flown by the _model_ _N_ aircraft once a week. The expected passenger traffic is _P_ passengers a week.
 
 * Cannot choose an aircraft for _А1_ -> _А2_ (out of range?)
 
-   Маршрут из аэропорта _А1_ в аэропорт _А2_ не удалось построить. Как правило, причина состоит в том, что расстояние между аэропортами превышает дальность полёта всех самолётов компании. Такое сообщение не является ошибкой, но может указывать на неудачно выбранный флот, если повторяется многократно. 
+   The route from the _А1_ airport to the _А2_ airport cannot be built. As a rule, the reason for this is that the distance between the airports cannot be covered by any aircraft of an airline fleet. It is a warning, not an error, but if it repeats, you should change the fleet.
 
 * Vacuum
 
-   Очистка и анализ.
+   Vacuuming and analysis.
 
 * End date reached, exiting
 
-   Завершение рабочего процесса.
+   Work process is completed.
 
-## Скрипт проверки
+## Check Script
 
-После того, как демобаза сгенерирована, рекомендуется выполнить стандартную проверку, чтобы убедиться в качестве подготовленных данных.
+After the demo database is generated, some standard checks are recommended to ensure quality of the generated data.
 
 ```sql
 \i check.sql
 ```
 
-Скрипт выполняет несколько запросов. Результаты запросов описаны ниже.
+The script executes several queries. The query results are described below.
 
 ### Generation errors in log
 
-Количество ошибок в процессе генерации. Ошибки записываются в журнальную таблицу `gen.log` и начинаются со слова _Error_.
+Number of errors that occur during generation. The error messages are logged in the `gen.log` log table and start with the word _Error_.
 
 ### Generation stats
 
-Количество сгенерированных бронирований (`num_bookings`), билетов (`num_tickets`), перелётов (`num_segments`), рейсов (`num_flights`) и маршрутов (`num_routes`).
+Number of generated bookings (`num_bookings`), tickets (`num_tickets`), flight segments (`num_segments`), flights (`num_flights`), and routes (`num_routes`).
 
 ### Generation speed
 
-Скорость генерации в событиях в секунду. Рассчитанная скорость включает и время простоя между вызовами `generate` и `continue`.
+Generation speed: number of processed events per second. The calculation includes idle time between the `generate` and `continue` calls.
 
 ### Airplanes utilization
 
-Первый запрос (`avg_fill_ratio`) показывает среднюю заполненность салонов самолётов.
+The first query (`avg_fill_ratio`) returns average flight occupancy.
 
-Второй запрос показывает количество рейсов, выполненных с пустым салоном. Небольшое количество пустых рейсов выглядит правдоподобно.
+The second query shows the number of flights without passengers. A small value is usually acceptable.
 
-Третий запрос показывает список моделей самолётов и количество маршрутов, которые эта модель обслуживала. 
+The third query returns the list of aircraft models with the number of routes each model operated.
 
-> **Примечание**
+> **Note**
 >
-> * В разные периоды времени один и тот же маршрут может обслуживаться разными самолётами, поэтому выведенные числа не стоит складывать. 
-> * Вердикт `NOT USED` означает, что модель не выполнила ни одного рейса. Такую модель следует заменить. 
-> * Вердикт `WRONGLY USED` свидетельствует об ошибке в алгоритме.
+> * Do not add the values returned by the above queries since various models can perform one and the same route at various time.
+> * The `NOT USED` verdict is displayed when a model was not used for any of the flights. It is recommended to replace it.
+> * The `WRONGLY USED` verdict is a sign of an algorithm error.
 
 ### Roundtrips to overall tickets
 
-Отношение количества билетов «туда и обратно» к общему количеству билетов (`roundtrip_frac`) и целевое значение (`target_frac`), заданное параметром `gen.roundtrip_frac`. Реальное значение всегда будет меньше целевого из-за того, что не для каждого прямого билета удаётся купить обратный.
+Ratio of round-trip tickets to the total number of tickets (`roundtrip_frac`) and target value (`target_frac`) set by the `gen.roundtrip_frac` parameter. The real number is less than the target since return tickets are not always available.
 
 ### Passengers per booking
 
-Первый запрос показывает, что в бронировании было не более `gen.max_pass_per_booking` пассажиров. Вердикт `ERROR: max_pass_per_bookings not satisfied` означает, что это правило было нарушено, и свидетельствует об ошибке в алгоритме.
+The first query checks that there are not more passengers in a booking than the `gen.max_pass_per_booking` parameter value. The `ERROR: max_pass_per_bookings not satisfied` verdict is displayed when the requirement is violated and is a sign of an algorithm error.
 
-Второй запрос показывает распределение бронирований по количеству пассажиров в них. Например, строка с `npass`, равным 2, и `cnt`, равным 100, говорит о том, что сто бронирований включают двух пассажиров. 
+The second query groups bookings by the number of passengers. For example, `npass` being 2 and `cnt` being 100 mean that 100 bookings include two passengers.
 
 ### Frequent flyers
 
-Распределение пассажиров по количеству выполненных ими бронирований. Например, строка с `nbook`, равным 3, и `cnt_pass`, равным 1000, говорит о том, что тысяча пассажиров сделали по три бронирования.
+The query groups the passengers by the number of bookings they made. For example, `nbook` being 3 and `cnt_pass` being 1000 mean that 1000 passengers made 3 bookings.
 
 ### Segments per ticket
 
-Распределение билетов по количеству перелётов в них. Например, строка с `segments`, равным 3, и `cnt`, равным 1000, говорит о том, что тысяча билетов включает три перелёта.
+The query groups the tickets by the number of flight segments. For example, `segments` being 3 and `cnt` being 1000 mean that 1000 tickets contain three flight segments.
 
 ### Flight statuses
 
-Количество рейсов в разных статусах.
+Number of flights in various statuses.
 
-> **Примечание**
+> **Note**
 >
-> Независимо от размера базы в трёх статусах — `On Time` (вылет по расписанию), `Departed` (вылетел и находится в воздухе) и `Boarding` (посадка пассажиров) — рейсов будет немного. Если таких рейсов нет, продолжите генерацию на несколько модельных часов, чтобы обеспечить разнообразие данных.
+> There are three statuses that do not depend on the database size and always have a few flights — `On Time`, `Departed`, and `Boarding`. If there are no flights in these statuses, continue generation for a few simulation hours to ensure data variety.
 
 ### Flight durations
 
-Вердикт `ERROR: route and flight discrepancy` в первом запросе говорит о рассинхронизации данных о продолжительности полётов между таблицами `bookings.routes` и `bookings.flights` и свидетельствует об ошибке в алгоритме.
+If the first query returns the `ERROR: route and flight discrepancy` verdict, data in the `bookings.routes` and `bookings.flights` tables are desynchronized. This is a sign of an algorithm error.
 
-Второй запрос показывает минимальную (`min_..._duration`), среднюю (`avg_..._duration`) и максимальную (`max_..._duration`) продолжительность полётов — как запланированную (`..._sch_...`), так и реальную (`..._act_...`).
+The second query displays the minimum (`min_..._duration`), average (`avg_..._duration`), and maximum (`max_..._duration`) flight duration — both scheduled (`..._sch_...`) and actual (`..._act_...`).
 
 ### Flight delays
 
-Минимальная (`min_..._delay`), средняя (`avg_..._delay`) и максимальная (`max_..._delay`) задержка оправлений (`..._dep_...`) и прибытий (`..._arr_...`).
+Minimum (`min_..._delay`), average (`avg_..._delay`), and maximum (`max_..._delay`) delay of departures (`..._dep_...`) and arrivals (`..._arr_...`).
 
 ### Overbookings
 
-Количество перебронирований.
+Number of overbookings.
 
-Вердикт `ERROR: overbooking` означает, что посадочных талонов выдано больше, чем мест в самолёте, и свидетельствует об ошибке в алгоритме.
+The `ERROR: overbooking` verdict is displayed when there are more boarding passes issued than the seats and is a sign of an algorithm error.
 
 ### Cancelled flights fraction
 
-Доля отменённых рейсов (`actual_cancelled_frac`) и целевое значение (`target_cancelled_frac`), заданное параметром `gen.cancel_frac`. Должны совпадать с хорошей точностью.
+Fraction of cancelled flights (`actual_cancelled_frac`) and target value (`target_cancelled_frac`) set by the `gen.cancel_frac` parameter. These values must match with high level of precision.
 
 ### Adjacency of segments
 
-Вердикт `ERROR: non-adjacent segments` означает, что аэропорт назначения одного перелёта не совпадает с аэропортом отправления следующего перелёта из того же билета. Это свидетельствует об ошибке в алгоритме.
+The `ERROR: non-adjacent segments` verdict is displayed when there are several flight segments in one ticket and the airport of arrival and the airport of departure do not match. This is a sign of an algorithm error.
 
 ### Routes validity ranges
 
-Вердикт `ERROR: validity ranges have holes` говорит о наличии пропусков между периодами действия маршрутов. Это свидетельствует об ошибке в алгоритме.
+The `ERROR: validity ranges have holes` verdict notifies that there are gaps between the route validity ranges. This is a sign of an algorithm error.
 
 ### Flights consistency with routes
 
-Вердикт `ERROR: absent flights` означает, что в таблице `bookings.flights` отсутствуют рейсы, которые должны быть согласно таблице `bookings.routes`.
+The `ERROR: absent flights` verdict is displayed when the `bookings.flights` table does not contain flights that it should have according to the `bookings.routes` table.
 
-Вердикт `ERROR: excess flights` означает, что в таблице `bookings.flights` есть рейсы, не соответствующие расписанию в таблице `bookings.routes`.
+The `ERROR: excess flights` verdict shows that the `bookings.flights` table contains flights that are not specified in the `bookings.routes` table.
 
-Возможны оба сообщения одновременно (`absent and excess flights`). Любая ошибка свидетельствует об ошибке в алгоритме.
+Two verdicts (`absent and excess flights`) can be displayed at once. Any of these verdicts is a sign of an algorithm error.
 
 ### Timings
 
-Вердикт `ERROR: flights timing discrepancy` в первом запросе говорит о рассогласовании времени в информации о рейсе.
+The `ERROR: flights timing discrepancy` verdict in the first query notifies about time desynchronization in the flight information.
 
-Вердикт `ERROR: boarding after takeoff` во втором запросе означает, что посадка пассажиров продолжалась после взлёта.
+The `ERROR: boarding after takeoff` verdict is displayed in the second query if boarding of passengers continues after the aircraft departure.
 
-Вердикт `ERROR: booking after boarding` в третьем запросе означает, что бронирование на рейс продолжалось после начала посадки пассажиров.
+The `ERROR: booking after boarding` verdict is displayed in the third query when booking continues after boarding starts.
 
-Любая ошибка в этой секции свидетельствует об ошибке в алгоритме.
+Any of these verdicts is a sign of an algorithm error.
 
 ### Miss the flight
 
-Пассажир может опоздать на рейс из-за задержки предыдущего стыковочного рейса. Генератор отслеживает такие ситуации, чтобы не допустить опоздавшего пассажира к следующим рейсам в билете.
+A passenger can miss their flight due to delay of their connecting flight. The generator needs to ensure that the passenger does not board the next flight.
 
-Первый запрос выводит фактическое количество пассажиров, опоздавших на рейс, а также количество некорректно зарегистрированных генератором опозданий и количество незарегистрированных генератором опозданий. Вердикт `ERROR: incorrect missed flights` свидетельствует об ошибке в алгоритме.
+The first query returns the actual number of passengers who are late for their connecting flight, as well as the number of incorrectly registered missing flights and number of unregistered missing flight. The `ERROR: incorrect missed flights` verdict is a sign of an algorithm error.
 
-Вердикт `ERROR: boarding after miss` во втором запросе означает, что пассажир сел в самолёт после опоздания, и свидетельствует об ошибке в алгоритме.
+The `ERROR: boarding after miss` verdict is displayed in the second query when a passenger boards the flight after missing it. This is a sign of an algorithm error.
 
 ### Interlaced flights
 
-Вердикт `ERROR: interlaced flights` означает, что один и тот же пассажир совершал более одного путешествия одновременно. Это свидетельствует об ошибке в алгоритме.
+The `ERROR: interlaced flights` verdict is displayed when a passenger makes more than one flight at the same time. This is a sign of an algorithm error.
 
-## Экспорт демобазы
+## Demo Database Export
 
-Сгенерированную демобазу можно выгрузить в виде SQL-скрипта, аналогичного результату работы команды `pg_dump`. 
+The generated demo database can be exported as a `pg_dump`-like SQL script.
 
-Чтобы экспортировать демобазу, в операционной системе в каталоге репозитория выполните скрипт:
+To export the demo database, in the repository directory, run the following script as an OS user:
 
 ```sh
 ./export.sh | gzip > `date +%Y%m%d`.sql.gz
 ```
 
-Скрипту можно передать любые параметры подключения, принимаемые утилитой `pg_dump`.
+The script accepts the same connection parameters as `pg_dump`.
 
-В выгруженный SQL-скрипт будут входить объекты схемы `booking`, включая определения функций `bookings.now` (значение конечной модельной даты, указанной при генерации) и `bookings.version` (версия сгенерированной демобазы). Также будут включены команды для установки параметров `bookings.lang` и `search_path` на уровне базы данных.
+The exported SQL script will contain the objects from the `booking` schema, including the definitions of the `bookings.now` (end simulation time set during generation) and `bookings.version` (version of the generated demo database) functions, as well as commands to set the `bookings.lang` and `search_path` parameters at the database level.
 
-## Внутреннее устройство
+## Internals
 
-Генератор имитирует работу авиакомпании, создавая и обрабатывая поток случайных событий — бронирование авиабилетов пассажирами, регистрацию и посадку, отправления и прибытия самолётов и т. п. Обработчик событий может добавлять в очередь новые события, реализуя конечный автомат состояний рейса.
+The generator imitates the airline work. It creates and processes random events — passengers’ booking of tickets, checking-in and boarding, departure and arrival of aircrafts etc. The event handler can add new events to the queue implementing finite state automation of the flight statuses.
 
-Демобаза содержит две схемы:
+The demo database has two schemas:
  
-   * `gen` — со служебными таблицами, которые используются при генерации и хранят её текущее состояние; 
-   * `bookings` — с таблицами создаваемой демобазы, которые описаны в [документации по демобазе](https://postgrespro.ru/education/demodb).
+   * `gen` — with service tables used during generation and storing its current state
+   * `bookings` — with tables of the created demo database that are described in the [demo database documentation](https://postgrespro.com/education/demodb)
 
-Таблицы из схемы `gen` описаны ниже.
+The `gen` tables are described below.
 
 ### `gen.events`
 
-Таблица, содержащая неотработанные события.
+Table with events in queue.
 
-Очередь событий обрабатывается процедурой `process_queue`, а отдельное событие — процедурой `process_event`.
+The event queue is handled by the `process_queue` procedure, while separate events — by the `process_event` procedure.
 
-Типы событий перечислены ниже.
+Types of events are listed below.
 
 #### INIT
 
-«Затравочное» событие. Обрабатывается процедурой `do_init`, которая инициализирует состояния всех таблиц и добавляет начальный набор событий: `BUILD ROUTES`, `BOOKING`, `VACUUM` и `MONITORING`.
+Event that flags initiation of the process. Handled by the `do_init` procedure that initiates states of all tables and adds the initial set of events: `BUILD ROUTES`, `BOOKING`, `VACUUM`, and `MONITORING`.
 
 #### BUILD ROUTES
 
-Событие перестройки маршрутов. Обрабатывается процедурой `build_routes`, которая создаёт случайный, но связный граф маршрутов. 
+Route rebuild event. Handled by the `build_routes` procedure that creates a random but connected graph.
 
-Первое событие `BUILD ROUTES` добавляется при обработке `INIT`. Создаётся расписание на месяц, начиная с даты начала генерации. В конце обработки события вставляется следующее событие `BUILD ROUTES`, чтобы маршруты перестраивались каждый месяц. Для каждого построенного маршрута также добавляется событие `FLIGHT`, отмечающее начало бронирований на этот маршрут за месяц до его вступления в силу.
+The first `BUILD ROUTES` event is added as a result of the `INIT` processing. A one-month schedule, starting from the start generation date, is created. After the first `BUILD ROUTES` event is processed, a new one is added to the event queue, so that the routes are then rebuilt every month. Each route also gets the `FLIGHT` event, setting the start of booking for this route a month before it becomes valid.
 
-##### Как формируется маршрутная сеть?
+##### How is a route graph built?
 
-Для формирования связанного графа маршрутов:
+The graph is built according to the steps below:
 
-1. Берутся аэропорты с непустым значением в столбце `traffic` таблицы `gen.airports_data`. 
-2. От каждого аэропорта добавляются рёбра (перелёты) к двум другим случайным аэропортам по следующим правилам:
+1. Airports with a non-empty `traffic` column of the `gen.airports_data` table are found.
+2. Two edges (flights) are randomly added from each airport to two other airports following the below rules:
 
-   * Добавление рёбер начинается с наименее загруженного аэропорта.
-   * Перелёты между несколькими аэропортами одного города никогда не создаются.
-   * Вероятность добавления ребра пропорциональна трафику аэропорта назначения и обратно пропорциональна расстоянию между аэропортами.
-   * При наличии в одной стране хотя бы двух городов вероятность выбора аэропорта той же страны определяется параметром `gen.domestic_frac`.
+   * The least busy airport is the first to be added edges from.
+   * There are no flights segments between the airports located in one city.
+   * Airport choice depends on the airport traffic and is reversely proportionate to the distance between the airports.
+   * If there are at least two airports in a country, the odds of choosing an airport in the same country are determined by the `gen.domestic_frac` parameter.
 
-3. Рёбра графа записываются в таблицу `gen.directions`.
-4. Рёбра добавляются, пока граф не становится связным. Связность графа отслеживается с помощью таблицы `gen.directions_connect`.
-5. Новые маршруты переносятся из таблицы `gen.directions` в таблицу `bookings.routes` с соответствующим интервалом действия (`validity`).
-6. Самолёт, обслуживающий маршрут, и количество рейсов в неделю подбираются исходя из прогнозируемого трафика между аэропортами (таблица `gen.week_traffic`).
+3. The graph edges are added to the `gen.directions` table.
+4. Edges are added till connectivity is achieved. It is ensured by the `gen.directions_connect` table.
+5. New routes are transferred from the `gen.directions` table to the `bookings.routes` table at a specified `validity` period.
+6. An aircraft for the route and the number of flights per week are determined based on the expected traffic between the airports (specified in the `gen.week_traffic` table).
 
 #### BOOKING
 
-Событие бронирования из заданного аэропорта. Обрабатывается процедурой `make_booking`, которая пытается забронировать путешествие в случайный аэропорт. 
+Booking event for a particular airport. Handled by the `make_booking` procedure that books a flight to a random airport.
 
-Следующее событие `BOOKING` для данного аэропорта отправления создаётся так, чтобы события образовывали пуассоновский поток с частотой, соответствующей пассажиропотоку аэропорта. 
+The next `BOOKING` event for the source airport is created so that the events constituted the Poisson process with the frequency corresponding to the passenger traffic of the airport.
 
-Среднее количество событий бронирования в неделю — значение `airports_data.traffic`, умноженное на `gen.traffic_coeff`.
+To calculate the average number of booking events per week, multiply the `airports_data.traffic` and `gen.traffic_coeff` parameter values.
 
-##### Как выполняется бронирование?
+##### How is booking done?
 
-В ходе выполнения бронирования:
+Booking is done in the following steps:
 
-1. Выбирается аэропорт назначения по следующим правилам:
+1. An airport of arrival is chosen according to the following rules:
 
-   * Вероятность выбора аэропорта пропорциональна трафику аэропорта и обратно пропорциональна расстоянию между аэропортами отправления и назначения.
-   * При наличии в одной стране хотя бы двух городов вероятность выбора аэропорта той же страны определяется параметром `gen.domestic_frac`.
+   * Airport choice depends on the airport traffic and is reversely proportionate to the distance between the airports.
+   * If there are at least two airports in a country, the odds of choosing an airport in the same country are determined by the `gen.domestic_frac` parameter.
 
-2. Определяется маршрут до выбранного аэропорта (функция `get_path`) по следующим правилам:
+2. The route to the airport (`get_path` function) is chosen according to the following rules:
    
-   * В выбранном маршруте меньше всего пересадок, причём их количество не превышает `gen.max_hops`.
-   * В продаже есть билеты.
-   * До отправления достаточно времени: рассматриваются рейсы, на которые ещё не открыта регистрация.
-   * Между стыковочными рейсами как минимум `gen.min_transfer` часов (иначе велик риск пропустить рейс из-за возможной задержки) и не более `gen.max_transfer` часов (иначе ожидание слишком длительное).
-   * Первый перелёт в выбранном маршруте начинается как можно раньше.
+   * The route has the fewest flight segments that do not exceed the `gen.max_hops` parameter value.
+   * There are available tickets for the flight.
+   * There is enough time before departure: checking-in has not started yet.
+   * There are at least `gen.min_transfer` hours (to avoid missing the connecting flight in case the previous one is delayed) and not more than `gen.max_transfer` hours (to avoid long waiting) between the connecting flights.
+   * The route has the soonest first connecting flight.
    
-3. Случайно с учетом параметра `gen.max_pass_per_booking` определяется количество пассажиров в бронировании.
-4. В результате бронирования создаются:
+3. Number of passengers in a booking is chosen randomly depending on the `gen.max_pass_per_booking` parameter.
+4. Booking results in:
 
-   * строка в таблице `bookings.bookings`;
-   * строки для каждого билета в таблице `bookings.tickets` (по одной на каждого пассажира и направления следования);
-   * строки в таблице перелётов `bookings.segments`.
+   * A new row in the `bookings.bookings` table
+   * New rows for each ticket in the `bookings.tickets` table (one for each passenger and flight direction)
+   * New rows in the `bookings.segments` table
 
-    >   **Примечание**
+
+    >   **Note**
     >
-    >   Если не удаётся найти подходящий маршрут или на выбранный маршрут не удаётся забронировать билеты на всех пассажиров, попытка бронирования считается неудачной и отменяется.
+    >   If there is no suitable route or if tickets cannot be booked for all the passengers, the booking attempt is considered failed and cancelled.
 
-5. С вероятностью, определяемой параметром `gen.roundtrip_frac`, выполняется попытка забронировать полёт в обратном направлении через случайный интервал времени (до месяца, в среднем — около недели).
+5. With the `gen.roundtrip_frac` probability, booking of a return ticket is attempted in a random period of time (up to a month; usually — about a week).
 
-    >   **Примечание**
+    >   **Note**
     >
-    >   * Маршрут обратного следования может не совпадать с исходным маршрутом. 
-    >   * Неуспешная попытка не отменяет бронирования в прямом направлении.
+    >   * The return route can differ from the source route.
+    >   * A failed attempt to book a return flight does not cancel the outbound flight.
 
 #### FLIGHT
 
-Событие добавления рейса в расписание за месяц до отправления. Обрабатывается процедурой `open_booking`, которая вставляет строку в таблицу `bookings.flights` для рейса, открывая возможность бронирования (статус `Scheduled`). 
+Event of adding a flight to the schedule a month before the departure. Handled by the `open_booking` procedure that adds a row to the `bookings.flights` table for the flight enabling booking (`Scheduled` status).
 
-С вероятностью `gen.cancel_frac` рейс отменяется (статус `Cancelled`). Отмена всегда происходит заранее: рейс не отменяется после того, как на него куплены какие-либо билеты.
+With the `gen.cancel_frac` probability, the flight is cancelled (`Cancelled` status). This happens in advance and never when any ticket is bought.
 
-За день до отправления неотменённого рейса на него открывается регистрация, за что отвечает добавляемое событие `REGISTRATION`. 
+If the flight is not cancelled, the day before the departure, registration for this flight starts. The `REGISTRATION` event is added.
 
 #### REGISTRATION
 
-Событие открытия регистрации на рейс за день до отправления. Обрабатывается процедурой `registration`, которая меняет статус рейса на `On Time` и определяет фактическое время начала регистрации (допустима небольшая задержка на несколько минут). 
+Registration event a day before the departure. Handled by the `registration` procedure that changes the flight status to `On Time` and sets the actual start registration time (a few-minute delay is acceptable).
 
-С вероятностью, определяемой параметром `gen.delay_frac`, рейс задерживается (статус `Delayed`) на время от 1 часа до 12 часов.
+With the `gen.delay_frac` probability, the flight is delayed (`Delayed` status) for the period of one to 12 hours.
 
-Для каждого билета, проданного на данный рейс, создаётся события регистрации `CHECK-IN` (регистрация заканчивается за 40 минут до отправления). Затем создаётся событие начала посадки на этот рейс — `BOARDING`.
+The `CHECK-IN` event is created for each ticket sold for the flight (checking-in is closed 40 minutes before the departure). Then, the `BOARDING` event is created for the flight.
 
 #### CHECK-IN
 
-Событие регистрации на рейс для конкретного билета. Обрабатывается процедурой `check_in`, которая создаёт строки в таблице `bookings.boarding_passes` для посадочных талонов на каждый рейс в билете (считается, что все рейсы в билете являются стыковочными).
+Event of checking in for the flight for a particular ticket. Handled by the `check_in` procedure that creates rows in the `bookings.boarding_passes` table for boarding passes for each flight segment of the ticket (all of the flights within a ticket are considered connecting).
 
-> **Примечание**
+> **Note**
 >
-> Пассажир проходит регистрацию только один раз, на первый рейс в билете.
+> A passenger has to check in only once for the first flight segment of the ticket.
 
 #### BOARDING
 
-Событие начала посадки на рейс за полчаса до вылета. Обрабатывается процедурой `boarding`, которая меняет статус рейса на `Boarding`. 
+Boarding event half an hour before the departure. Handled by the `boarding` procedure that changes the flight status to `Boarding`.
 
-Для каждого билета, проданного на рейс, создаётся событие посадки `GET IN`. Посадка длится 20 минут. Если она заканчивается до конца периода генерации, события `GET IN` не создаются, а вместо этого номер и время посадки проставляются в посадочных талонах (таблица `bookings.boarding_passes`) немедленно. Эта оптимизация позволяет существенно сократить количество событий и ускорить генерацию.
+The `GET IN` event is added for each ticket sold for this flight. Boarding lasts for 20 minutes. If the boarding finishes before the generation is completed, the `GET IN` events are not created and the number and time of boarding are entered into the boarding pass (`bookings.boarding_passes` table) straight away. This optimization significantly reduces the number of created events and speeds up generation.
 
-Также создаёт событие взлёта `TAKEOFF`, определяя фактическое время вылета (допускается небольшая задержка на несколько минут).
+The `TAKEOFF` event is also created to set the actual departure time (a few-minute delay is acceptable).
 
 #### GET IN
 
-Событие посадки в самолёт для конкретного билета. Обрабатывается процедурой `get_in`, которая проставляет номер и время посадки в посадочном талоне (таблица `bookings.boarding_passes`).
+Event of getting in the aircraft for a particular ticket. Handled by the `get_in` procedure that enters the boarding number and time into the boarding pass (`bookings.boarding_passes` table).
 
 #### TAKEOFF
 
-Событие взлёта. Обрабатывается процедурой `takeoff`, которая меняет статус рейса на `Departed` и создаёт событие приземления `LANDING`, определяя фактическую продолжительность полёта (возможно отклонение от плановой продолжительности на несколько процентов как в одну, так и в другую сторону).
+Take-off event. Handled by the `takeoff` procedure that changes the flight status to `Departed` and creates the `LANDING` event determining the actual flight duration (the actual duration can differ from the schedule by few percents).
 
 #### LANDING
 
-Событие приземления. Обрабатывается процедурой `landing`, которая меняет статус рейса на `Arrived`. На этом рейс считается отработанным; новых событий не генерируется.
+Landing event. Handled by the `landing` procedure that changes the flight status to `Arrived`. After that, the flight is considered completed; new events are not generated.
 
 #### VACUUM
 
-Событие очистки. Обрабатывается процедурой `vacuum`.
+Vacuuming event. Handled by the `vacuum` procedure.
 
-Поскольку обработка очереди событий происходит в одном операторе `CALL` (хоть и в разных транзакциях), статистика изменения таблиц не передаётся сборщику статистики: автоочистка не имеет представления, что содержимое таблиц меняется, и не срабатывает.
+The queue is processed by different transactions but within a single `CALL` operator. For this reason, the statistics collector does not receive the table statistics: autovacuum does not know that tables have been changed and is not triggered.
 
-Поэтому раз в модельную неделю очистка и анализ запускаются принудительно. Запуск происходит в отдельном процессе с помощью расширения `dblink`.
+That is why, vacuuming and analysis are forced through the `vacuum` procedure once a simulation week. It is launched in a separate process with the `dblink` extension.
 
 #### MONITORING
 
-Событие мониторинга. Обрабатывается процедурой `monitoring`, которая раз в модельный день заносит в журнальную таблицу `gen.log` сведения о прошедшем дне.
+Monitoring event. Handled by the `monitoring` procedure that adds information about the previous day to the `gen.log` log table.
 
 ### `gen.events_history`
 
-Таблица, содержащая отработанные события из таблицы `gen.events` для возможности отладки.
+Table storing processed events from the `gen.events` table for debugging.
 
 ### `gen.airplanes_data`
 
-Таблица с данными о моделях самолётов. Все строки и все столбцы, за исключением столбца `in_use`, который определяет, надо ли назначать данную модель на рейсы, переносятся в таблицу `bookings.airplanes_data`.
+Table with aircraft model data. All the rows and columns are transferred to the `bookings.airplanes_data` table, except for the `in_use` column that determines whether the model will be used for flights.
 
 ### `gen.seats`
 
-Таблица с данными о компоновка салонов самолётов. Все данные без изменений переносятся в таблицу `bookings.seats`.
+Table with cabin configuration data. All the data are transferred to the `bookings.seats` table without changes.
 
 ### `gen.seats_remain`
 
-Таблица, используемая генератором для отслеживания оставшихся свободных мест на рейсах.
+Table used by the generator to monitor the remaining free seats for flights.
 
 ### `gen.airports_data`
 
-Таблица с данными об аэропортах. В таблицу `bookings.airports_data` переносятся все строки и все столбцы, за исключением столбцов:
+Table with airport data. All the rows and columns are transferred to the `bookings.airports_data` table, except for the following columns:
 
-   * `country_code` — двухсимвольный код страны в соответствии с ISO 3166-1 alpha-2 (попадает в номер билета `bookings.tickets.ticket_no`);
-   * `traffic` — относительный пассажиропоток авиакомпании в данном аэропорту. Абсолютное количество попыток бронирований в неделю из данного аэропорта — значение `traffic`, умноженное на значение `gen.traffic_coeff`.
+   * `country_code` — two-character country code compliant with ISO 3166-1 alpha-2 (part of the `bookings.tickets.ticket_no` ticket number)
+   * `traffic` — relative passenger traffic of an airline for a particular airport (to calculate the absolute number of booking attempts in a week, multiply the `traffic` value by the `gen.traffic_coeff` parameter valuer)
 
 ### `gen.directions`
 
-Таблица, в которую добавляются пары аэропортов, которые будет связаны прямыми рейсами. Используется генератором при составлении графа перелётов.
+Table with airport pairs connected with direct flights. Used by the generator to build the flight graph.
 
 ### `gen.directions_connect`
 
-Таблица, которая используется генератором для определения связности графа перелётов.
+Table used to ensure connectivity of flight graph.
 
 ### `gen.airports_to_prob`
 
-Таблица, которая хранит предварительно вычисленные накопленные вероятности полёта из одного аэропорта в другой (необязательно связанных прямым рейсом) и используется при составлении графа перелётов и для выбора аэропорта назначения при бронировании.
+Table storing pre-calculated cumulative probabilities of flights from one airport to another (not necessarily connected with a direct flight) and used to build the flight graph and choose an airport for booking.
 
 ### `gen.week_traffic`
 
-Таблица, содержащая прогноз пассажиропотока между двумя аэропортами, соединёнными прямым рейсом.
+Table with the forecast of passenger traffic between two airports connected with a direct flight.
 
 ### `gen.firstnames`
 
-Таблица с данными о популярности имён в разбивке по странам. С помощью столбца `grp` можно разделить имена одной страны на группы, например мужские и женские для тех языков, в которых форма фамилии зависит от пола. При инициализации в столбец `cume_dist` заносится накопленная вероятность выбора данного имени.
+Table with names sorted by countries with their usage frequency. The table allows to group names using the `grp` column, for example, masculine and feminine names for the languages where a family name form depends on the gender. During initialization, the `cume_dist` column receives cumulative probability of choosing a particular name.
 
 ### `gen.lastnames`
 
-Таблица с данными о популярности фамилий в разбивке по странам. С помощью столбца `grp` можно разделить фамилии одной страны на группы. При инициализации в столбец `cume_dist` заносится накопленная вероятность выбора данной фамилии.
+Table with family names sorted by countries with their usage frequency. The table allows to group family names using the `grp` column. During initialization, the `cume_dist` column receives cumulative probability of choosing a particular family name.
 
 ### `gen.passengers`
 
-Таблица для отслеживания уникальных пассажиров. Используется генератором, чтобы гарантировать, что одному номеру документа (`passenger_id`) соответствует одно имя, а также что один пассажир не участвует в нескольких одновременных поездках. Информация из этой таблицы не переносится в демобазу, в которой нет отдельной сущности «пассажир».
+Table listing unique passengers. Used by the generator to ensure that one `passenger_id` document number corresponds to one name and that one passenger does not participate in several trips at the same time. The information from this table is not transferred to the demo database where there is no “passenger” entity.
 
 ### `gen.missed_flights`
 
-Таблица, используемая генератором для отслеживания билетов тех пассажиров, которые опоздали на перелёт из-за задержки предыдущего рейса.
+Table used by the generator to track tickets of the passengers who missed their connecting flight due to the previous flight delay.
 
 ### `gen.stat_bookings`
 
-Статистика по бронированиям. Используется для мониторинга генерации.
+Booking statistics. Used for monitoring.
 
 ### `gen.stat_jobs`
 
-Статистика по параллельным процессам. В норме счётчики (столбец `events`) обработанных событий для каждого процесса должны быть примерно равны. Если счётчик какого-либо процесса не увеличивается во время генерации, следует искать сообщение об ошибке в журнале `gen.log`.
+Parallel process statistics. Normally, counts of processed events are almost equal. If generation does not increase count of a certain process, look for an error message in the `gen.log` table.
 
 ### `gen.stat_bookrefs`
 
-Статистика по количеству повторов, которые потребовались для генерации уникального номера бронирования (`book_ref`).
+Statistics on retries required to generate the unique `book_ref` number.
 
 
-## Вопросы и ответы
+## Answers and Questions
 
-### Как добавить для демобазы новый язык?
+### How can I add a new language?
 
-Язык перевода в демобазе выбирается параметром `bookings.lang`. Переводятся названия моделей самолётов (представление `airplanes`), а также названия аэропортов, городов и стран (представление `airports`). Изначально доступно два языка: русский (`ru`) и английский (`en`).
+The language is set by the `bookings.lang` parameter. Aircraft model names (`airplanes` view) as well as names of airports, cities, and countries (`airports` view) are translated into this language. Initially, translations to two languages are available: Russian (`ru`) and English (`en`).
 
-Чтобы добавить новый язык, добавьте переводы в JSON-столбцы `airport_name`, `city` и `country` таблицы `gen.airports_data` и столбец `model` таблицы `gen.airplanes_data`. 
+To add a new language, provide translations of the relevant names into this language for the `airport_name`, `city`, and `country` JSON-columns of the `gen.airports_data` table and the `model` column of the `gen.airplanes_data` table.
 
-Это непростая задача, поскольку в таблице аэропортов содержится около 5500 строк. Как минимум необходимо перевести строки с непустым значением пассажиропотока (`traffic`), то есть названия аэропортов, участвующих в формировании маршрутов.
+This is a challenging task since the table with airports contains about 5500 lines. You need to translate at least the rows with a non-null `traffic` value that will be used to build a route network.
 
-### Как изменить флот авиакомпании?
+### How can I change an airline fleet?
 
-Чтобы изменить флот авиакомпании, укажите новые модели самолётов и компоновку их салонов в таблицах `gen.airplanes_data` и `gen.seats`. Они будут перенесены в аналогичные `bookings`-таблицы. В рейсах будут участвовать только самолёты с признаком `in_use`.
+To change an airline fleet, add new aircraft models and cabin configurations to the `gen.airplanes_data` and `gen.seats` tables. These data will be transferred to the relevant `bookings` tables. Only the aircrafts with the `in_use` attribute will be used to build routes.
 
-> **Примечание**
+> **Note**
 >
-> * Дальность полёта выбранного набора самолётов должна покрывать расстояния между городами, иначе некоторые перелёты могут оказаться нереализуемыми.
-> * Вместимость самолётов должна соответствовать планируемому пассажиропотоку: рейс выполняется минимум раз в неделю и максимум семь раз в неделю. Без должного разнообразия вместимостей все рейсы могут оказаться переполненными или недозаполненными.
+> * Flying distance of the aircrafts should cover the distance between the cities. Otherwise, flights would not be possible.
+> * Seat capacity should cover the expected passenger traffic: flights are performed at least once a week, maximum - 7 days a week. If a fleet does not offer enough variety of seats, flights may end up overcrowded or underfilled.
 
-### По каким критериям были выбраны страны для демобазы?
+### How were the countries for the demo database chosen?
 
-Для демобазы были выбраны страны ведущих разработчиков PostgreSQL, а также несколько других стран, имеющих определённое отношение к PostgreSQL. 
+The list of demo database countries includes the countries native to PostgreSQL major contributors and some other countries related to PostgreSQL development.
 
-Подробнее о добавлении новых стран смотрите [ниже](#как-добавить-новую-страну).
+For more information about adding new countries to the list, refer to the subsection [below](#how-can-I-add-a-new-country).
 
-### Каков критерий выбора количества аэропортов?
+### How many airports were chosen for each country?
 
-Количество аэропортов в демобазе пропорционально квадрату суммы логарифмов площадей стран и численности их населения:
+To calculate the number of airports for a country, add country square logarithm and country population logarithm and square this sum:
 
-$$ 0,5 ( log( площадь, км^2 ) + log( население, млн ) - 5 )^2 $$
+$$ 0,5 ( log( country square, km^2 ) + log( country population, mln ) - 5 )^2 $$
 
-Подробнее о добавлении новых аэропортов смотрите [ниже](#как-добавить-новый-аэропорт).
+For more information about adding new airports, refer to the subsection [below](#how-can-I-add-a-new-airport).
 
-### Как изменить маршрутную сеть в пределах существующих стран и городов?
+### How can I change the route network within countries and cities?
 
-Установите непустое значение пассажиропотока (`traffic`) для желаемых аэропортов в таблице `gen.airports_data`. Эти аэропорты будут использоваться при формировании маршрутов.
+You can include airports to the route network. To do this, set a non-null `traffic` value for the required airports in the `gen.airports_data` table.
 
-### Как добавить новую страну?
+### How can I add a new country?
 
-При добавлении новой страны недостаточно просто выбрать аэропорты в таблице `gen.airports_data`. Потребуется определить справочники имён (`firstnames.dat` и `lastnames.dat`) для новой страны. Для это нужно обновить таблицы `gen.firstnames` и `gen.lastnames`.
+To add a new country, you need not only to specify the airports in the `gen.airports_data` table but also to update to the `firstnames.dat` and `lastnames.dat` reference files through the `gen.firstnames` and `gen.lastnames` tables.
 
-Вам потребуется:
+To do this, you will need the following data:
 
-   * `country` — двухсимвольный код страны в соответствии с ISO 3166-1 alpha-2.
-   * `grp` — `-` или критерий, по которому имена/фамилии делятся на группы. В этот столбец можно поместить любое текстовое значение, но оно должно совпадать в обеих таблицах (например, можно использовать `m` и `f`). 
+   * `country` — two-character country code compliant with ISO 3166-1 alpha-2
+   * `grp` — `-` or criterion to group names/family names
 
-     Делить имена и фамилии на мужские и женские потребуется для языков, в которых форма фамилии зависит от рода имени (например, славянские и балтийские языки). Имена, относящиеся как к мужским, так и к женским, должны быть помещены в обе группы (возможно, с разной популярностью).
+     You can use any text value as long as it is the same for the `gen.firstnames` and `gen.lastnames` tables (for example, `m` and `f`).
+
+     For languages where family name forms depend on gender (for example, Slavic and Baltic languages, such as Russian) you need to divide all the names into masculine and feminine. Names that can be both masculine and feminine should be put into both groups (their usage frequency can differ).
    
-     Тот же принцип можно использовать для разделения и на другие группы, например чтобы смоделировать этнические группы с обособленными системами имён.
+     The same principle applies to distribute names into other groups. For example, to create ethnical groups with various systems of names.
    
-   * `name` — новое имя/фамилия на латинице;
-   * `qty` — целое число, отражающее популярность имени/фамилии. Например, зарегистрированное количество людей, носящих данное имя/фамилию, по результатам переписи населения.
+   * `name` — name/family name in Latin characters
+   * `qty` — integer that reflects the name/family name usage frequency
 
-В настоящее время справочники генератора содержат имена, записанные латиницей, для следующих стран: Россия (`RU`), Китай (`CN`), Индия (`IN`), США (`US`), Канада (`CA`), Япония (`JP`), Франция (`FR`), Германия (`DE`), Италия (`IT`), Великобритания (`GB`), Чили (`CL`), Швеция (`SE`), Непал (`NP`), Финляндия (`FI`), Новая Зеландия (`NZ`), Австрия (`AT`) и Чехия (`CZ`).
+     For example, number of people registered with this name/family name.
 
-Чтобы проверить результат, можно выполнить следующий запрос, где `XX` — код страны:
+Currently, the reference files contain names in Latin characters for the following countries: Russia (`RU`), China (`CN`), India (`IN`), the USA (`US`), Canada (`CA`), Japan (`JP`), France (`FR`), Germany (`DE`), Italy (`IT`), the UK (`GB`), Chile (`CL`), Sweden (`SE`), Nepal (`NP`), Finland (`FI`), New Zealand (`NZ`), Austria (`AT`), and the Czech Republic (`CZ`).
+
+Once the tables are updated, to check the result, run the following query where `XX` is a country code:
 
 ```sql
-CALL calc_names_cume_dist(); -- рассчитывает накопленную вероятность
+CALL calc_names_cume_dist(); -- calculation of cumulative probability
 SELECT get_passenger_name('XX') FROM generate_series(1,10);
 ```
 
-При генерации имени из всех групп выбирается случайная фамилия, а затем выбирается случайное имя из той группы, к которой принадлежит фамилия. При этом полные имена, в которых имя и фамилия одинаковы, не выбираются.
+To generate passengers` full names, a family name is randomly chosen from all the groups, then a name from the same group as the family name. There can be no identical full names.
 
-### Как добавить новый аэропорт?
+### How can I add a new airport?
 
-Чтобы добавить новый аэропорт, добавьте новую строку в таблицу `gen.airports_data` и заполните её следующей информацией:
+To add a new airport, add a new row to the `gen.airports_data` table with the following data:
 
-   * код Международной ассоциации воздушного транспорта (IATA) (`airport_code`);
-   * название аэропорта на доступных в демобазе языках (`airport_name`);
-   * название города на доступных в демобазе языках (`city`);
-   * страну на доступных в демобазе языках (`country`);
-   * код страны (`country_code`);
-   * часовой пояс (`timezone`);
-   * координаты аэропорта (указываются в формате «долгота, широта») (`coordinates`).
+   * International Air Transport Association (IATA) airport code (`airport_code`)
+   * Airport name in all demo database languages (`airport_name`)
+   * City name in all demo database languages (`city`)
+   * Country name in all demo database languages (`country`)
+   * Country code (`country_code`)
+   * Timezone (`timezone`)
+   * Airport coordinates (latitude and longitude) (`coordinates`)
 
-Полной актуальной базы аэропортов в свободном доступе нет. Существует несколько открытых проектов, таких как [OpenFlights](https://openflights.org/data.php), [OurAirports](https://ourairports.com/data/) и [DataHub](https://datahub.io/core/airport-codes). Однако полнота и актуальность предоставленной в них информации не гарантируется.
+There is no full, actual, and free database of airports. There are several open-source projects, like [OpenFlights](https://openflights.org/data.php), [OurAirports](https://ourairports.com/data/), and [DataHub](https://datahub.io/core/airport-codes). However, their data integrity and accuracy are not guaranteed.
 
-Конкретный аэропорт [можно проверить](https://www.iata.org/en/publications/directories/code-search/) на официальном сайте Международной ассоциации воздушного транспорта (IATA).
+To get data of a particular airport, use the [IATA official website](https://www.iata.org/en/publications/directories/code-search/).
 
+To ensure data consistency in the `gen.airports_data` table, note the following rules:
 
-Чтобы новая запись в таблице `gen.airports_data` была согласована с существующими, стоит придерживаться некоторых правил:
-
-* В качестве города (`city`) выбирается город, который обслуживается этим аэропортом. Часто это ближайший к аэропорту крупный населённый пункт, а не тот пункт, в котором расположен аэропорт. Например, для IAR городом является Ярославль, а не село Туношна.
-* Официальное название аэропорта часто состоит из названия населённого пункта, в котором расположен аэропорт, посвящения какому-либо видному деятелю и других частей. Для краткости имя сокращается по следующим правилам:
-   * Название города не повторяется в названии аэропорта (за исключением случаев, когда официальное название состоит только из названия города; например, AAC «El Arish»).
-   * В качестве названия аэропорта используется либо название населённого пункта, где расположен аэропорт, либо имя человека, причём предпочтение отдаётся населённому пункту (например, SVO «Шереметьево имени А. С. Пушкина» сокращается до «Шереметьево»).
-   * Если используется посвящение человеку, титулы и воинские звания отбрасываются (например, YAI «General Bernardo O'Higgins» сокращается до «Bernardo O'Higgins»).
-   * Отбрасываются слова «международный», «региональный» и т. п. (например, ROA «Roanoke–Blacksburg Regional» сокращается до «Blacksburg», учитывая, что Roanoke — название города).
-   * В русском языке промежуточные инициалы убираются (например, JFK «John F. Kennedy» переводится как «Джон Кеннеди»).
+* The`city` value is the city that a particular airport serves. As a rule, this is the closest large city, not necessarily the one where the airport is located. For example, the Russian IAR “Golden Ring Yaroslavl International Airport” is located in Tunoshna village, Yaroslavl Region, but the city it serves is the administrative center - Yaroslavl.
+* An official airport name usually includes airport location, name of the person it is named after, and some other parts. To contract an airport name:
+   * Remove city names (expect when the airport name contains only the city name; for example, AAC “El Arish”).
+   * If the name consists of both the location and dedication to somebody, remove the person`s name. For example, SVO “Alexander S. Pushkin Sheremetyevo International Airport” is contracted to “Sheremetyevo”.
+   * Omit titles and military ranks. For example, YAI “General Bernardo O’Higgins” turns into “Bernardo O’Higgins”.
+   * Avoid such words as “international”, “regional” etc. For example, ROA “Roanoke–Blacksburg Regional” becomes “Blacksburg” (Roanoke is a city name and is also removed).
+   * Remove initials from the airport names in Russian. For example, JFK “John F. Kennedy” is shortened to “John Kennedy”.
 

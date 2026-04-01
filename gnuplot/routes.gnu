@@ -1,4 +1,4 @@
-set terminal pngcairo size 1800,900
+set terminal svg size 1800,900
 unset key
 
 #set border 0
