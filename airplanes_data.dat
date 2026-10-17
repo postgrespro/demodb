@@ -1,7 +1,7 @@
-32N	{"en": "Aerobus A320neo", "ru": "Аэробус A320neo"}	6500	830	t
-339	{"en": "Aerobus A330-900neo", "ru": "Аэробус A330-900neo"}	13300	870	t
-351	{"en": "Aerobus A350-1000", "ru": "Аэробус A350-1000"}	16700	913	t
-35X	{"en": "Aerobus A350F", "ru": "Аэробус A350F"}	8700	903	f
+32N	{"en": "Airbus A320neo", "ru": "Аэробус A320neo"}	6500	830	t
+339	{"en": "Airbus A330-900neo", "ru": "Аэробус A330-900neo"}	13300	870	t
+351	{"en": "Airbus A350-1000", "ru": "Аэробус A350-1000"}	16700	913	t
+35X	{"en": "Airbus A350F", "ru": "Аэробус A350F"}	8700	903	f
 76F	{"en": "Boeing 767-300F", "ru": "Боинг 767-300F"}	6000	850	f
 77W	{"en": "Boeing 777-300ER", "ru": "Боинг 777-300ER"}	14600	905	t
 789	{"en": "Boeing 787-9 Dreamliner", "ru": "Боинг 787-9 Dreamliner"}	14000	913	t
